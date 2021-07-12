@@ -1,0 +1,12 @@
+version: '3.4'
+
+services:
+
+  postgres_image:
+    image: postgres
+    ports:
+        - 5432:5432
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: analysis
+      POSTGRES_USER: analysis     
