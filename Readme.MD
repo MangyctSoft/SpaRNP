@@ -1,3 +1,5 @@
+![](rolling.jpg)
+
 ### BACKEND
 SpaRNP.Analysis.Api - Rest Api
 SpaRNP.Context - Entity Framework
