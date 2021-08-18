@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using SpaRNP.Analysis.API.Services;
 using SpaRNP.Models;
 using System;
@@ -15,16 +16,19 @@ namespace SpaRNP.Analysis.API.Controllers
     public class AnalysisController : ControllerBase
     {
         private readonly IAnalysisUserService _analysisUsersService;
-
-        public AnalysisController(IAnalysisUserService analysisUsersService)
+        private readonly ILogger<AnalysisController> _logger;
+        public AnalysisController(IAnalysisUserService analysisUsersService, ILogger<AnalysisController> logger)
         {
             _analysisUsersService = analysisUsersService;
+            _logger = logger;
         }
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<AnalysisUser>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> Get()
         {
+            _logger.LogInformation("Get request.");
+
             var result = await _analysisUsersService.GetAll();
 
             if (result.Count() > 0)
@@ -39,12 +43,19 @@ namespace SpaRNP.Analysis.API.Controllers
         [HttpGet]
         [ProducesResponseType((int)HttpStatusCode.OK)]
         [ProducesResponseType((int)HttpStatusCode.BadRequest)]
-        public decimal Calculate() => _analysisUsersService.Calculate();
+        public decimal Calculate()
+        {
+            _logger.LogInformation("Calculate.");
+
+            return _analysisUsersService.Calculate();
+        }
 
         [Route("save")]
         [HttpPut]
         public async Task<IActionResult> Save([FromBody]List<AnalysisUser> users)
         {
+            _logger.LogInformation("Save.");
+
             if (users == null)
             {
                 throw new ArgumentNullException(nameof(users));
