@@ -1,50 +1,62 @@
 ﻿using SpaRNP.Analysis.API.Test;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 
 const string uriApi = "http://localhost:5050";
+const int second = 10;
+
 swaggerClient client = new swaggerClient(uriApi, new HttpClient());
 
-Console.WriteLine($"Запуск теста WebAPI (host: {uriApi})\n");
-Stopwatch stopWatch = new Stopwatch();
+Console.WriteLine($"\nТест производительности WebAPI (host: {uriApi}\nВремя опроса {second} секунд.\n");
+
 
 #region Test 1
+
 Console.WriteLine($"Запуск теста получения данных.");
-stopWatch.Start();
 
-var response = await client.AnalysisAsync();
+CancellationTokenSource cts = new CancellationTokenSource();
 
-stopWatch.Stop();
-
-TimeSpan ts = stopWatch.Elapsed;
-
-string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-Console.WriteLine($"Время ожидания {elapsedTime}\n");
-
-Console.WriteLine("|    id    |    RegistredAt        |       ActiveAt         |");
-foreach (var item in response)
+try
 {
-    Console.WriteLine($"|    {item.Id}     |    {item.RegisteredAt.ToString("dd.MM.yyyy")}         |       {item.ActiveAt.ToString("dd.MM.yyyy")}        |");
+    cts.CancelAfter(TimeSpan.FromSeconds(second));
+    var result = await RunTest(() =>
+    {
+        client.AnalysisAsync().Wait();        
+    }, cts.Token);
+    ShowResult(result, second);
 }
+catch
+{
+    cts.Dispose();
+}
+
 #endregion
 
 #region Test 2
+
 Console.WriteLine("\n\n");
 Console.WriteLine($"Запуск теста рассчитать длительностей жизней пользователей.");
-stopWatch.Start();
 
-var data = await client.CalculateAsync();
+cts = new CancellationTokenSource();
 
-stopWatch.Stop();
+try
+{
+    cts.CancelAfter(TimeSpan.FromSeconds(second));
+    var result = await RunTest(() =>
+    {
+        client.CalculateAsync().Wait();
+    }, cts.Token);
+    ShowResult(result, second);
+}
+catch
+{
+    cts.Dispose();
+}
 
-ts = stopWatch.Elapsed;
-
-elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-Console.WriteLine($"Время ожидания {elapsedTime}\n");
-Console.WriteLine($"Результат: {data}");
 #endregion
 
 #region Test 3
@@ -61,17 +73,45 @@ List<AnalysisUser> request = new()
     }
 };
 
-stopWatch.Start();
+cts = new CancellationTokenSource();
 
-await client.SaveAsync(request);
+try
+{
+    cts.CancelAfter(TimeSpan.FromSeconds(second));
+    var result = await RunTest(() =>
+    {
+        client.SaveAsync(request).Wait();
+    }, cts.Token);
+    ShowResult(result, second);
+}
+catch
+{
+    cts.Dispose();
+}
 
-stopWatch.Stop();
 
-ts = stopWatch.Elapsed;
-
-elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-Console.WriteLine($"Время ожидания {elapsedTime}\n");
 #endregion
 
+
+void ShowResult(int result, int second) => Console.WriteLine($"\nReq/sec ({result}/{second}) result: {result / second}");
+
+Task<int> RunTest(Action action, CancellationToken token)
+{
+    int result = 0;
+    try
+    {
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            action?.Invoke();
+            result++;
+        }
+    }
+    catch (OperationCanceledException)
+    {
+        return Task.FromResult(result);
+    }
+}
+Console.WriteLine("\n");
+Console.WriteLine("Press any key.");
 Console.ReadLine();
- 
