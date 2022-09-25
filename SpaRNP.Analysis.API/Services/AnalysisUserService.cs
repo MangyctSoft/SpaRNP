@@ -19,8 +19,8 @@ namespace SpaRNP.Analysis.API.Services
 
         public decimal Calculate() => _analysisUsersRepository.Calculate();
 
-        public async Task<IEnumerable<AnalysisUser>> GetAll() => await _analysisUsersRepository.GetAll();
+        public Task<IEnumerable<AnalysisUser>> GetAll() => _analysisUsersRepository.GetAll();
 
-        public async Task Save(List<AnalysisUser> users) => await _analysisUsersRepository.Save(users);
+        public Task Save(List<AnalysisUser> users) => _analysisUsersRepository.Save(users);
     }
 }
